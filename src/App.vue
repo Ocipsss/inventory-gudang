@@ -63,7 +63,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
           </svg>
         </button>
-        <h1 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Mekkah Stock</h1>
+        <h1 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Toko Mekkah</h1>
       </div>
       <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-200"></div>
     </header>
