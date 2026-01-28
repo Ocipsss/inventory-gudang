@@ -44,7 +44,7 @@ const routes = [
   {
     path: '/kategori',
     name: 'Kategori',
-    component: () => import('../views/Settings.vue'),
+    component: () => import('../views/Kategori.vue'),
     meta: { title: 'Kelola Kategori', requiresAuth: true }
   }
 ]
