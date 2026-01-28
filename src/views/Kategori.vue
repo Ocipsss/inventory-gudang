@@ -7,15 +7,15 @@
         </svg>
       </router-link>
       <div>
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Pengaturan</h1>
-        <p class="text-slate-500 text-xs font-medium">Kelola sistem inventory</p>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Kategori Produk</h1>
+        <p class="text-slate-500 text-xs font-medium">Kelola pengelompokan barang</p>
       </div>
     </div>
 
     <div class="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-50 mb-8">
       <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
         <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-        Daftar Kategori
+        Tambah Kategori
       </h2>
 
       <div class="flex gap-2 mb-6">
@@ -23,8 +23,8 @@
           v-model="newCat" 
           @keyup.enter="handleAdd"
           type="text" 
-          placeholder="Kategori baru..." 
-          class="flex-1 bg-slate-50 border-none p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-sm transition-all"
+          placeholder="Nama kategori..." 
+          class="flex-1 bg-slate-50 border-none p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-sm transition-all outline-none"
         />
         <button 
           @click="handleAdd"
@@ -53,9 +53,9 @@
     </div>
 
     <div class="p-5 bg-orange-50 rounded-3xl border border-orange-100 text-orange-700">
-      <p class="text-[10px] font-bold leading-relaxed tracking-tight uppercase opacity-80 mb-1">Tips Inventory</p>
+      <p class="text-[10px] font-bold leading-relaxed tracking-tight uppercase opacity-80 mb-1">Catatan</p>
       <p class="text-xs font-medium italic leading-relaxed">
-        Kategori yang sudah dihapus tetap akan muncul di data barang lama sampai kamu mengedit barang tersebut ke kategori yang baru.
+        Menghapus kategori tidak akan menghapus barang yang sudah ada, namun kategori tersebut tidak akan muncul lagi di pilihan "Tambah Barang".
       </p>
     </div>
   </div>
@@ -83,10 +83,8 @@ const handleAdd = async () => {
 }
 
 const handleDelete = async (cat) => {
-  // cat sekarang adalah objek {id, name}
   if (confirm(`Hapus kategori "${cat.name}"?`)) {
     try {
-      // Mengirimkan cat.id ke store.removeCategory
       await store.removeCategory(cat.id)
     } catch (e) {
       alert("Gagal menghapus kategori")
