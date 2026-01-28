@@ -1,41 +1,20 @@
 <template>
-  <div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-      <div class="text-center mb-8">
-        <h2 class="text-3xl font-bold text-gray-800">Inventory Toko</h2>
-        <p class="text-gray-500 mt-2">Silakan login untuk mengelola stok</p>
+  <div class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-[3rem] shadow-2xl p-10 border border-slate-100">
+      <div class="text-center mb-10">
+        <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-200 rotate-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+        </div>
+        <h2 class="text-3xl font-black text-slate-800 tracking-tighter uppercase">Mekkah Stock</h2>
+        <p class="text-slate-400 font-bold text-sm mt-1">Inventory Management System</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="space-y-6">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Email</label>
-          <input 
-            v-model="email"
-            type="email" 
-            required 
-            class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            placeholder="admin@toko.com"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Password</label>
-          <input 
-            v-model="password"
-            type="password" 
-            required 
-            class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button 
-          type="submit" 
-          :disabled="loading"
-          class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span v-if="loading">Memproses...</span>
-          <span v-else>Masuk</span>
+      <form @submit.prevent="handleLogin" class="space-y-4">
+        <input v-model="email" type="email" placeholder="Email" class="w-full p-5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none font-bold transition-all" required />
+        <input v-model="password" type="password" placeholder="Password" class="w-full p-5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-blue-500 outline-none font-bold transition-all" required />
+        
+        <button type="submit" :disabled="loading" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 disabled:bg-slate-300 transition-all mt-4">
+          {{ loading ? 'Memverifikasi...' : 'Masuk Sekarang' }}
         </button>
       </form>
     </div>
@@ -44,9 +23,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { auth, db } from '../firebase/firebase' // Pastikan db diimpor
+import { auth, db } from '../firebase/firebase'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore' // Tambah ini untuk baca role
+import { doc, getDoc } from 'firebase/firestore'
 import { useRouter } from 'vue-router'
 
 const email = ref('')
@@ -57,41 +36,20 @@ const router = useRouter()
 const handleLogin = async () => {
   loading.value = true
   try {
-    // 1. Cek Autentikasi (Cek apakah email & password benar di Firebase Auth)
-    const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value)
-    const user = userCredential.user
-
-    // 2. Ambil data User dari Firestore berdasarkan UID
-    const userDocRef = doc(db, 'users', user.uid)
-    const userDoc = await getDoc(userDocRef)
+    const res = await signInWithEmailAndPassword(auth, email.value, password.value)
+    const userDoc = await getDoc(doc(db, 'users', res.user.uid))
 
     if (userDoc.exists()) {
-      const userData = userDoc.data()
+      const data = userDoc.data()
+      localStorage.setItem('userRole', data.role)
+      localStorage.setItem('userName', data.nama)
       
-      // Simpan role ke localStorage agar bisa digunakan di komponen lain (misal untuk sembunyikan tombol hapus)
-      localStorage.setItem('userRole', userData.role)
-      localStorage.setItem('userName', userData.nama)
-
-      alert(`Selamat Datang, ${userData.nama}!`)
-
-      // 3. Arahkan berdasarkan role
-      if (userData.role === 'admin') {
-        router.push('/') // Admin ke Dashboard penuh
-      } else {
-        router.push('/produk') // Staff langsung ke daftar produk saja
-      }
+      data.role === 'admin' ? router.push('/') : router.push('/produk')
     } else {
-      // Kasus jika user ada di Auth tapi belum dibuatkan dokumennya di Firestore
-      alert('Login berhasil, tapi data profil tidak ditemukan. Hubungi Admin Utama.')
+      alert('Profil belum dibuat di Firestore. Hubungi Admin.')
     }
-  } catch (error) {
-    console.error(error)
-    // Pesan error yang lebih user-friendly
-    let message = 'Gagal Login: Periksa kembali email dan password Anda.'
-    if (error.code === 'auth/user-not-found') message = 'Akun tidak terdaftar di Firebase B.'
-    if (error.code === 'auth/wrong-password') message = 'Password salah.'
-    
-    alert(message)
+  } catch (e) {
+    alert('Email atau Password salah!')
   } finally {
     loading.value = false
   }
