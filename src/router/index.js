@@ -46,7 +46,13 @@ const routes = [
     name: 'Kategori',
     component: () => import('../views/Kategori.vue'),
     meta: { title: 'Kelola Kategori', requiresAuth: true }
-  }
+  },
+  {
+  path: '/manage-users',
+  name: 'ManageUsers',
+  component: () => import('../views/ManageUsers.vue'),
+  meta: { title: 'Tambah Staff', requiresAuth: true }
+}
 ]
 
 const router = createRouter({
