@@ -1,37 +1,51 @@
 import { createRouter, createWebHistory } from 'vue-router'
-// 1. Import auth dari konfigurasi firebase Anda
 import { auth } from '../firebase/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
+
+// Fungsi Helper untuk menunggu status auth dari Firebase
+const getCurrentUser = () => {
+  return new Promise((resolve, reject) => {
+    const removeListener = onAuthStateChanged(
+      auth,
+      (user) => {
+        removeListener();
+        resolve(user);
+      },
+      reject
+    );
+  });
+};
 
 const routes = [
   {
     path: '/',
     name: 'Dashboard',
     component: () => import('../views/Dashboard.vue'),
-    meta: { title: 'Dashboard - Mekkah Stock' }
+    meta: { title: 'Dashboard - Mekkah Stock', requiresAuth: true }
   },
   {
     path: '/login',
     name: 'Login',
     component: () => import('../views/Login.vue'),
-    meta: { title: 'Login' }
+    meta: { title: 'Login', requiresAuth: false }
   },
   {
     path: '/produk',
     name: 'ProductList',
     component: () => import('../views/ProductList.vue'),
-    meta: { title: 'Daftar Stok' }
+    meta: { title: 'Daftar Stok', requiresAuth: true }
   },
   {
     path: '/tambah-produk',
     name: 'AddProduct',
     component: () => import('../views/AddProduct.vue'),
-    meta: { title: 'Tambah Produk' }
+    meta: { title: 'Tambah Produk', requiresAuth: true }
   },
   {
     path: '/kategori',
     name: 'Kategori',
     component: () => import('../views/Settings.vue'),
-    meta: { title: 'Kelola Kategori' }
+    meta: { title: 'Kelola Kategori', requiresAuth: true }
   }
 ]
 
@@ -43,23 +57,20 @@ const router = createRouter({
   }
 })
 
-// 2. Tambahkan Navigation Guard (beforeEach) di sini
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.name !== 'Login'
-  const isAuthenticated = auth.currentUser
+// Navigation Guard yang diperbaiki
+router.beforeEach(async (to, from, next) => {
+  const isAuthenticated = await getCurrentUser();
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
   if (requiresAuth && !isAuthenticated) {
-    // Jika butuh login tapi user belum login, lempar ke halaman Login
-    next({ name: 'Login' })
+    next({ name: 'Login' });
   } else if (to.name === 'Login' && isAuthenticated) {
-    // Tambahan opsional: Jika sudah login tapi mau ke page Login, lempar ke Dashboard
-    next({ name: 'Dashboard' })
+    next({ name: 'Dashboard' });
   } else {
-    next()
+    next();
   }
 })
 
-// 3. Logika untuk mengubah judul halaman
 router.afterEach((to) => {
   document.title = to.meta.title || 'Mekkah Stock'
 })

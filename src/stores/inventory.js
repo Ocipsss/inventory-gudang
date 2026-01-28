@@ -1,30 +1,27 @@
 import { defineStore } from 'pinia'
-import { db } from '../firebase/firebase'
+import { db, auth } from '../firebase/firebase'
 import { 
   collection, 
   onSnapshot, 
   addDoc, 
   deleteDoc, 
   doc, 
-  updateDoc, 
-  query, 
-  where, 
-  getDocs 
+  updateDoc 
 } from 'firebase/firestore'
 
 export const useInventoryStore = defineStore('inventory', {
   state: () => ({
     items: [],
-    // Sekarang akan berisi array of objects: [{id: '...', name: '...'}]
     categories: [], 
     loading: true,
     isInitialized: false 
   }),
 
   actions: {
-    // 1. Ambil Barang & Kategori dengan proteksi duplikasi
     fetchItems() {
-      if (this.isInitialized) return
+      // Hanya jalankan jika user sudah login dan belum diinisialisasi
+      if (this.isInitialized || !auth.currentUser) return
+      
       this.loading = true
 
       // Listener Produk
@@ -34,12 +31,13 @@ export const useInventoryStore = defineStore('inventory', {
           ...doc.data() 
         }))
         this.loading = false
+      }, (error) => {
+        console.error("Firestore Products Error:", error)
       })
 
-      // Listener Kategori (Diperbaiki agar menyimpan ID)
+      // Listener Kategori
       onSnapshot(collection(db, 'categories'), (snapshot) => {
         if (snapshot.empty) {
-          // Tetap simpan sebagai objek agar konsisten
           this.categories = [
             { id: '1', name: 'Makanan' },
             { id: '2', name: 'Minuman' },
@@ -47,7 +45,6 @@ export const useInventoryStore = defineStore('inventory', {
             { id: '4', name: 'Lainnya' }
           ]
         } else {
-          // mapping dokumen ke object {id, name}
           this.categories = snapshot.docs.map(doc => ({
             id: doc.id,
             name: doc.data().name
@@ -58,17 +55,13 @@ export const useInventoryStore = defineStore('inventory', {
       this.isInitialized = true
     },
 
-    // 2. Tambah Kategori Baru
     async addCategory(catName) {
-      // Cek duplikasi berdasarkan property 'name'
       const exists = this.categories.some(c => c.name.toLowerCase() === catName.toLowerCase())
       if (!exists && catName.trim() !== "") {
         await addDoc(collection(db, 'categories'), { name: catName })
       }
     },
 
-    // 3. Hapus Kategori berdasarkan ID (Lebih Efisien & Akurat)
-    // Sekarang kita tidak perlu query where() lagi karena sudah punya ID-nya
     async removeCategory(id) {
       try {
         await deleteDoc(doc(db, 'categories', id))
@@ -77,14 +70,12 @@ export const useInventoryStore = defineStore('inventory', {
       }
     },
 
-    // 4. Manajemen Produk
     async addItem(item) {
       await addDoc(collection(db, 'products'), item)
     },
 
     async updateItem(id, updatedData) {
       const itemRef = doc(db, 'products', id)
-      // Pastikan ID tidak ikut terupdate masuk ke dalam data firestore
       const { id: _, ...data } = updatedData 
       await updateDoc(itemRef, data)
     },
