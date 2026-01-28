@@ -32,14 +32,15 @@
       >
         Semua
       </button>
+      
       <button 
         v-for="cat in store.categories" 
-        :key="cat"
-        @click="selectedCategory = cat"
-        :class="selectedCategory === cat ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-500 border border-slate-100'"
+        :key="cat.id"
+        @click="selectedCategory = cat.name"
+        :class="selectedCategory === cat.name ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-500 border border-slate-100'"
         class="px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap"
       >
-        {{ cat }}
+        {{ cat.name }}
       </button>
     </div>
 
@@ -91,16 +92,18 @@
           
           <div class="grid grid-cols-2 gap-3">
             <select v-model="editForm.kategori" class="bg-slate-50 border-none p-4 rounded-2xl font-semibold outline-none focus:ring-2 focus:ring-blue-500">
-              <option v-for="cat in store.categories" :key="cat" :value="cat">{{ cat }}</option>
+              <option v-for="cat in store.categories" :key="cat.id" :value="cat.name">
+                {{ cat.name }}
+              </option>
             </select>
             <input v-model="editForm.lokasi" type="text" placeholder="Lokasi Rak" class="bg-slate-50 border-none p-4 rounded-2xl font-semibold" />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-            <input v-model.number="editForm.hargaModal" type="number" placeholder="Harga Modal" class="bg-blue-50 p-4 rounded-2xl font-bold text-blue-600" />
-            <input v-model.number="editForm.hargaJual" type="number" placeholder="Harga Jual" class="bg-green-50 p-4 rounded-2xl font-bold text-green-600" />
+            <input v-model.number="editForm.hargaModal" type="number" min="0" placeholder="Harga Modal" class="bg-blue-50 p-4 rounded-2xl font-bold text-blue-600" />
+            <input v-model.number="editForm.hargaJual" type="number" min="0" placeholder="Harga Jual" class="bg-green-50 p-4 rounded-2xl font-bold text-green-600" />
           </div>
-          <input v-model.number="editForm.stok" type="number" placeholder="Stok" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600" />
+          <input v-model.number="editForm.stok" type="number" min="0" placeholder="Stok" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600" />
 
           <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-all uppercase">
             SIMPAN PERUBAHAN
@@ -112,6 +115,8 @@
 </template>
 
 <script setup>
+// Bagian script tetap sama seperti sebelumnya karena logic filteredItems sudah benar
+// Selama item.kategori menyimpan string nama kategori, filter ini akan tetap jalan.
 import { ref, onMounted, computed } from 'vue'
 import { useInventoryStore } from '../stores/inventory'
 
@@ -124,16 +129,13 @@ const editForm = ref({
   nama: '', kategori: '', lokasi: '', hargaModal: 0, hargaJual: 0, stok: 0
 })
 
-// Logic Filter Gabungan (Kategori + Search)
 const filteredItems = computed(() => {
   let items = store.items || []
 
-  // Filter Berdasarkan Kategori
   if (selectedCategory.value !== 'Semua') {
     items = items.filter(item => item.kategori === selectedCategory.value)
   }
 
-  // Filter Berdasarkan Pencarian
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     items = items.filter(item => 

@@ -31,9 +31,11 @@
 
         <button 
           type="submit" 
-          class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200"
+          :disabled="loading"
+          class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Masuk
+          <span v-if="loading">Memproses...</span>
+          <span v-else>Masuk</span>
         </button>
       </form>
     </div>
@@ -42,21 +44,56 @@
 
 <script setup>
 import { ref } from 'vue'
-import { auth } from '../firebase/firebase'
+import { auth, db } from '../firebase/firebase' // Pastikan db diimpor
 import { signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore' // Tambah ini untuk baca role
 import { useRouter } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
+const loading = ref(false)
 const router = useRouter()
 
 const handleLogin = async () => {
+  loading.value = true
   try {
-    await signInWithEmailAndPassword(auth, email.value, password.value)
-    alert('Login Berhasil!')
-    router.push('/') // Pindah ke dashboard setelah sukses
+    // 1. Cek Autentikasi (Cek apakah email & password benar di Firebase Auth)
+    const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value)
+    const user = userCredential.user
+
+    // 2. Ambil data User dari Firestore berdasarkan UID
+    const userDocRef = doc(db, 'users', user.uid)
+    const userDoc = await getDoc(userDocRef)
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data()
+      
+      // Simpan role ke localStorage agar bisa digunakan di komponen lain (misal untuk sembunyikan tombol hapus)
+      localStorage.setItem('userRole', userData.role)
+      localStorage.setItem('userName', userData.nama)
+
+      alert(`Selamat Datang, ${userData.nama}!`)
+
+      // 3. Arahkan berdasarkan role
+      if (userData.role === 'admin') {
+        router.push('/') // Admin ke Dashboard penuh
+      } else {
+        router.push('/produk') // Staff langsung ke daftar produk saja
+      }
+    } else {
+      // Kasus jika user ada di Auth tapi belum dibuatkan dokumennya di Firestore
+      alert('Login berhasil, tapi data profil tidak ditemukan. Hubungi Admin Utama.')
+    }
   } catch (error) {
-    alert('Login Gagal: ' + error.message)
+    console.error(error)
+    // Pesan error yang lebih user-friendly
+    let message = 'Gagal Login: Periksa kembali email dan password Anda.'
+    if (error.code === 'auth/user-not-found') message = 'Akun tidak terdaftar di Firebase B.'
+    if (error.code === 'auth/wrong-password') message = 'Password salah.'
+    
+    alert(message)
+  } finally {
+    loading.value = false
   }
 }
 </script>

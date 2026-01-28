@@ -35,15 +35,19 @@
       </div>
 
       <div class="space-y-2">
-        <div v-for="cat in store.categories" :key="cat" 
+        <div v-for="cat in store.categories" :key="cat.id" 
           class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl group border border-transparent hover:border-slate-100 transition-all">
-          <span class="font-bold text-slate-700 uppercase text-xs tracking-wider">{{ cat }}</span>
+          <span class="font-bold text-slate-700 uppercase text-xs tracking-wider">{{ cat.name }}</span>
           
           <button @click="handleDelete(cat)" class="text-slate-300 hover:text-red-500 transition-colors p-1">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
+        </div>
+
+        <div v-if="store.loading" class="text-center py-4 text-slate-400 text-xs animate-pulse">
+          Memuat kategori...
         </div>
       </div>
     </div>
@@ -65,7 +69,7 @@ const store = useInventoryStore()
 const newCat = ref('')
 
 onMounted(() => {
-  store.fetchItems() // Memastikan data kategori terbaru ditarik
+  store.fetchItems() 
 })
 
 const handleAdd = async () => {
@@ -79,9 +83,14 @@ const handleAdd = async () => {
 }
 
 const handleDelete = async (cat) => {
-  if (confirm(`Hapus kategori "${cat}"?`)) {
-    // Pastikan di inventory.js kamu sudah ada action removeCategory
-    await store.removeCategory(cat)
+  // cat sekarang adalah objek {id, name}
+  if (confirm(`Hapus kategori "${cat.name}"?`)) {
+    try {
+      // Mengirimkan cat.id ke store.removeCategory
+      await store.removeCategory(cat.id)
+    } catch (e) {
+      alert("Gagal menghapus kategori")
+    }
   }
 }
 </script>

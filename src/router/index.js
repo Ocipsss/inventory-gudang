@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+// 1. Import auth dari konfigurasi firebase Anda
+import { auth } from '../firebase/firebase'
 
 const routes = [
   {
@@ -40,6 +42,24 @@ const router = createRouter({
     return { top: 0 }
   }
 })
+
+// 2. Tambahkan Navigation Guard (beforeEach) di sini
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.name !== 'Login'
+  const isAuthenticated = auth.currentUser
+
+  if (requiresAuth && !isAuthenticated) {
+    // Jika butuh login tapi user belum login, lempar ke halaman Login
+    next({ name: 'Login' })
+  } else if (to.name === 'Login' && isAuthenticated) {
+    // Tambahan opsional: Jika sudah login tapi mau ke page Login, lempar ke Dashboard
+    next({ name: 'Dashboard' })
+  } else {
+    next()
+  }
+})
+
+// 3. Logika untuk mengubah judul halaman
 router.afterEach((to) => {
   document.title = to.meta.title || 'Mekkah Stock'
 })
