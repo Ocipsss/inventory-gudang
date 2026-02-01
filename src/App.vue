@@ -30,7 +30,7 @@
 
           <nav class="flex-1 space-y-3">
             <router-link 
-              v-for="item in menuItems" :key="item.path" :to="item.path" 
+              v-for="item in filteredMenu" :key="item.path" :to="item.path" 
               @click="isNavOpen = false"
               class="flex items-center gap-4 p-4 rounded-2xl font-bold transition-all duration-300 group"
               :class="$route.path === item.path ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'"
@@ -73,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { auth } from './firebase/firebase'
 import { signOut } from 'firebase/auth'
 import { useRouter } from 'vue-router'
@@ -90,12 +90,22 @@ const handleLogout = async () => {
 }
 
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: 'svg-dashboard' },
-  { name: 'Daftar Produk', path: '/produk', icon: 'svg-produk' },
-  { name: 'Tambah Produk', path: '/tambah-produk', icon: 'svg-tambah' },
-  { name: 'Kategori', path: '/kategori', icon: 'svg-kategori' },
-  { name: 'Manage Staff', path: '/manage-users', icon: 'svg-users' },
+  { name: 'Dashboard', path: '/', icon: 'svg-dashboard', adminOnly: false },
+  { name: 'Daftar Produk', path: '/produk', icon: 'svg-produk', adminOnly: false },
+  { name: 'Tambah Produk', path: '/tambah-produk', icon: 'svg-tambah', adminOnly: true },
+  { name: 'Kategori', path: '/kategori', icon: 'svg-kategori', adminOnly: true },
+  { name: 'Manage Staff', path: '/manage-users', icon: 'svg-users', adminOnly: true },
 ]
+
+// Logika Filter Menu berdasarkan Role
+const filteredMenu = computed(() => {
+  const role = localStorage.getItem('userRole')
+  return menuItems.filter(item => {
+    // Jika menu butuh admin tapi role bukan admin, jangan tampilkan
+    if (item.adminOnly && role !== 'admin') return false
+    return true
+  })
+})
 </script>
 
 <style>

@@ -2,7 +2,7 @@
   <div class="max-w-md mx-auto pb-20 px-2">
     <div class="mb-6 px-1">
       <h1 class="text-2xl font-black text-slate-800 tracking-tight">Stok Barang</h1>
-      <p class="text-slate-500 text-xs font-medium italic">Role: {{ userRole }}</p>
+      <p class="text-slate-500 text-xs font-medium italic uppercase tracking-widest">Akses: {{ userRole }}</p>
     </div>
 
     <div class="relative mb-4">
@@ -35,7 +35,11 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             </button>
           </div>
-          <div v-else class="text-[10px] text-slate-400 font-bold uppercase">{{ item.lokasi || 'Gudang' }}</div>
+
+          <div v-else class="flex flex-col items-end">
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Lokasi</span>
+            <div class="text-[11px] text-slate-600 font-black uppercase">{{ item.lokasi || 'Rak Umum' }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -44,9 +48,9 @@
       <div class="fixed inset-0 bg-slate-900/60" @click="isModalOpen = false"></div>
       <div class="relative bg-white w-full max-w-lg rounded-t-[2.5rem] p-8">
         <form @submit.prevent="updateBarang" class="space-y-4">
-          <h2 class="font-black mb-4">EDIT STOK</h2>
+          <h2 class="font-black mb-4 uppercase tracking-tighter">Edit Stok: {{ editForm.nama }}</h2>
           <input v-model.number="editForm.stok" type="number" class="w-full bg-orange-50 p-4 rounded-2xl font-black text-orange-600 outline-none" />
-          <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">SIMPAN</button>
+          <button type="submit" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Simpan Perubahan</button>
         </form>
       </div>
     </div>

@@ -2,7 +2,7 @@
   <div class="max-w-md mx-auto pb-20 px-2">
     <div class="mb-8 px-1">
       <h1 class="text-2xl font-black text-slate-800 tracking-tight">Ringkasan Gudang</h1>
-      <p class="text-slate-500 text-xs font-medium">Data diperbarui secara real-time</p>
+      <p class="text-slate-500 text-xs font-medium italic">Update otomatis (Real-time)</p>
     </div>
 
     <div class="grid grid-cols-2 gap-4 mb-6">
@@ -26,10 +26,10 @@
         </svg>
       </div>
 
-      <div class="col-span-2 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
+      <div v-if="userRole === 'admin'" class="col-span-2 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div>
           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estimasi Nilai Modal</div>
-          <div class="text-2xl font-black text-slate-800">Rp{{ totalModal.toLocaleString() }}</div>
+          <div class="text-2xl font-black text-slate-800 tracking-tighter">Rp{{ totalModal.toLocaleString() }}</div>
         </div>
         <div class="bg-green-100 p-4 rounded-3xl text-green-600">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,26 +73,24 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useInventoryStore } from '../stores/inventory'
 
 const store = useInventoryStore()
+const userRole = ref(localStorage.getItem('userRole'))
 
 onMounted(() => {
   store.fetchItems()
 })
 
-// Logika menghitung total stok
 const totalStok = computed(() => {
   return (store.items || []).reduce((sum, item) => sum + (Number(item.stok) || 0), 0)
 })
 
-// Logika menghitung total modal (Stok x Harga Modal)
 const totalModal = computed(() => {
   return (store.items || []).reduce((sum, item) => sum + ((Number(item.stok) || 0) * (Number(item.hargaModal) || 0)), 0)
 })
 
-// Filter barang yang stoknya di bawah 5 unit
 const lowStockItems = computed(() => {
   return (store.items || []).filter(item => (Number(item.stok) || 0) < 5)
 })
