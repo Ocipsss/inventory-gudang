@@ -12,7 +12,7 @@ const getCurrentUser = () => {
 };
 
 const routes = [
-  { path: '/', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true } },
+  { path: '/', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true, adminOnly: false } },
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
   { path: '/produk', name: 'ProductList', component: () => import('../views/ProductList.vue'), meta: { requiresAuth: true } },
   { path: '/tambah-produk', name: 'AddProduct', component: () => import('../views/AddProduct.vue'), meta: { requiresAuth: true, adminOnly: true } },

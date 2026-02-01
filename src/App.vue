@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900 font-sans">
+  <div class="flex min-h-screen bg-slate-50 text-slate-900 font-sans overflow-x-hidden">
     
     <template v-if="$route.name !== 'Login'">
       <transition name="fade">
         <div v-if="isNavOpen" 
-          class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md"
+          class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md lg:hidden"
           @click="isNavOpen = false">
         </div>
       </transition>
 
       <aside 
         :class="isNavOpen ? 'translate-x-0' : '-translate-x-full'"
-        class="fixed inset-y-0 left-0 z-[101] w-72 bg-white shadow-[25px_0_50px_-15px_rgba(0,0,0,0.1)] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] p-6 rounded-r-[3rem] border-r border-slate-100">
+        class="fixed lg:static lg:translate-x-0 inset-y-0 left-0 z-[101] w-72 bg-white shadow-[25px_0_50px_-15px_rgba(0,0,0,0.1)] lg:shadow-none transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] p-6 rounded-r-[3rem] lg:rounded-none border-r border-slate-100 shrink-0">
         
         <div class="flex flex-col h-full">
           <div class="mb-10 px-2 pt-4">
@@ -28,7 +28,7 @@
             </div>
           </div>
 
-          <nav class="flex-1 space-y-3">
+          <nav class="flex-1 space-y-3 overflow-y-auto no-scrollbar">
             <router-link 
               v-for="item in filteredMenu" :key="item.path" :to="item.path" 
               @click="isNavOpen = false"
@@ -52,23 +52,32 @@
           </div>
         </div>
       </aside>
+    </template>
 
-      <header class="fixed top-0 inset-x-0 z-50 bg-slate-50/80 backdrop-blur-xl px-5 py-4 flex items-center justify-between border-b border-slate-200/50">
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+      <header v-if="$route.name !== 'Login'" 
+        class="fixed top-0 z-50 bg-slate-50/80 backdrop-blur-xl px-5 py-4 flex items-center justify-between border-b border-slate-200/50"
+        :class="$route.name !== 'Login' ? 'w-full lg:w-[calc(100%-18rem)]' : 'w-full'">
+        
         <div class="flex items-center gap-4">
-          <button @click="isNavOpen = true" class="p-3 bg-white shadow-md rounded-2xl text-slate-800 active:scale-90 transition-all border border-slate-100">
+          <button @click="isNavOpen = true" class="lg:hidden p-3 bg-white shadow-md rounded-2xl text-slate-800 active:scale-90 transition-all border border-slate-100">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
             </svg>
           </button>
-          <h1 class="font-black text-slate-800 uppercase tracking-tighter text-lg">Toko Mekkah</h1>
+          <h1 class="font-black text-slate-800 uppercase tracking-tighter text-lg lg:text-xl">Toko Mekkah</h1>
         </div>
-        <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-200"></div>
+        
+        <div class="flex items-center gap-3">
+          <span class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">Sistem Aktif</span>
+          <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-200"></div>
+        </div>
       </header>
-    </template>
 
-    <main :class="$route.name !== 'Login' ? 'pt-28 pb-10' : ''" class="min-h-screen">
-      <router-view />
-    </main>
+      <main :class="$route.name !== 'Login' ? 'pt-28 pb-10 px-4 md:px-8' : ''" class="flex-1">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
 
@@ -97,11 +106,9 @@ const menuItems = [
   { name: 'Manage Staff', path: '/manage-users', icon: 'svg-users', adminOnly: true },
 ]
 
-// Logika Filter Menu berdasarkan Role
 const filteredMenu = computed(() => {
   const role = localStorage.getItem('userRole')
   return menuItems.filter(item => {
-    // Jika menu butuh admin tapi role bukan admin, jangan tampilkan
     if (item.adminOnly && role !== 'admin') return false
     return true
   })
@@ -111,5 +118,10 @@ const filteredMenu = computed(() => {
 <style>
 .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 body { -webkit-font-smoothing: antialiased; }
 </style>
