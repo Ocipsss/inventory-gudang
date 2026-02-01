@@ -1,0 +1,451 @@
+1. index.js:
+index.js:
+import { createRouter, createWebHistory } from 'vue-router'
+import { auth } from '../firebase/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
+
+const getCurrentUser = () => {
+  return new Promise((resolve, reject) => {
+    const removeListener = onAuthStateChanged(auth, (user) => {
+      removeListener();
+      resolve(user);
+    }, reject);
+  });
+};
+
+const routes = [
+  { path: '/', name: 'Dashboard', component: () => import('../views/Dashboard.vue'), meta: { requiresAuth: true } },
+  { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
+  { path: '/produk', name: 'ProductList', component: () => import('../views/ProductList.vue'), meta: { requiresAuth: true } },
+  { path: '/tambah-produk', name: 'AddProduct', component: () => import('../views/AddProduct.vue'), meta: { requiresAuth: true, adminOnly: true } },
+  { path: '/kategori', name: 'Kategori', component: () => import('../views/Kategori.vue'), meta: { requiresAuth: true, adminOnly: true } },
+  { path: '/manage-users', name: 'ManageUsers', component: () => import('../views/ManageUsers.vue'), meta: { requiresAuth: true, adminOnly: true } }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+router.beforeEach(async (to, from, next) => {
+  const user = await getCurrentUser();
+  const role = localStorage.getItem('userRole');
+
+  if (to.meta.requiresAuth && !user) {
+    next('/login');
+  } else if (to.meta.adminOnly && role !== 'admin') {
+    alert('Akses Ditolak: Khusus Admin');
+    next('/produk'); // Staff dilempar ke produk saja
+  } else {
+    next();
+  }
+})
+
+export default router
+
+2. inventory.js:
+import { defineStore } from 'pinia'
+import { db, auth } from '../firebase/firebase'
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  updateDoc 
+} from 'firebase/firestore'
+
+export const useInventoryStore = defineStore('inventory', {
+  state: () => ({
+    items: [],
+    categories: [], 
+    loading: true,
+    isInitialized: false 
+  }),
+
+  actions: {
+    fetchItems() {
+      if (this.isInitialized || !auth.currentUser) return
+      this.loading = true
+
+      onSnapshot(collection(db, 'products'), (snapshot) => {
+        this.items = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        }))
+        this.loading = false
+      })
+
+      onSnapshot(collection(db, 'categories'), (snapshot) => {
+        if (snapshot.empty) {
+          this.categories = [{ id: '1', name: 'Makanan' }, { id: '2', name: 'Minuman' }]
+        } else {
+          this.categories = snapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().name
+          }))
+        }
+      })
+      this.isInitialized = true
+    },
+
+    // PROTEKSI: Cek role sebelum eksekusi ke Firebase
+    async addCategory(catName) {
+      if (localStorage.getItem('userRole') !== 'admin') return
+      await addDoc(collection(db, 'categories'), { name: catName })
+    },
+
+    async removeCategory(id) {
+      if (localStorage.getItem('userRole') !== 'admin') return
+      await deleteDoc(doc(db, 'categories', id))
+    },
+
+    async addItem(item) {
+      if (localStorage.getItem('userRole') !== 'admin') return
+      await addDoc(collection(db, 'products'), item)
+    },
+
+    async updateItem(id, updatedData) {
+      if (localStorage.getItem('userRole') !== 'admin') return
+      const itemRef = doc(db, 'products', id)
+      const { id: _, ...data } = updatedData 
+      await updateDoc(itemRef, data)
+    },
+
+    async deleteItem(id) {
+      if (localStorage.getItem('userRole') !== 'admin') return
+      await deleteDoc(doc(db, 'products', id))
+    }
+  }
+})
+
+3. AddProduct.vue:
+<template>
+  <div class="max-w-md mx-auto pb-10 px-2">
+    <div class="flex items-center gap-4 mb-8">
+      <router-link to="/produk" class="p-2 bg-white rounded-xl border border-slate-100 shadow-sm text-slate-600 active:scale-90 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </router-link>
+      <div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Tambah Barang</h1>
+        <p class="text-slate-500 text-xs italic font-medium">Input stok baru ke gudang</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 border border-slate-50">
+      <form @submit.prevent="handleSubmit" class="space-y-5">
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Informasi Produk</label>
+          <input v-model="form.nama" type="text" placeholder="Nama Barang" class="w-full mt-1.5 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white p-4 rounded-2xl outline-none transition-all font-semibold" required />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Kode SKU</label>
+            <input v-model="form.kode" type="text" readonly class="w-full mt-1.5 bg-slate-100 border-2 border-transparent p-4 rounded-2xl font-mono text-sm text-slate-500 cursor-not-allowed uppercase" />
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Kategori</label>
+            <select v-model="form.kategori" required class="w-full mt-1.5 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white p-4 rounded-2xl outline-none font-semibold transition-all">
+              <option disabled value="">Pilih Kategori</option>
+              <option v-for="cat in store.categories" :key="cat.id" :value="cat.name">
+                {{ cat.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Posisi di Gudang</label>
+          <input v-model="form.lokasi" type="text" placeholder="Rak A-01" class="w-full mt-1.5 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white p-4 rounded-2xl outline-none font-semibold" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="relative">
+            <label class="text-[10px] font-black text-blue-400 uppercase ml-1">Harga Beli</label>
+            <input v-model.number="form.hargaModal" type="number" min="0" class="w-full mt-1.5 bg-blue-50 p-4 rounded-2xl font-bold text-blue-600 outline-none" required />
+          </div>
+          <div class="relative">
+            <label class="text-[10px] font-black text-green-500 uppercase ml-1">Harga Jual</label>
+            <input v-model.number="form.hargaJual" type="number" min="0" class="w-full mt-1.5 bg-green-50 p-4 rounded-2xl font-bold text-green-600 outline-none" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-[10px] font-black text-orange-400 uppercase ml-1">Stok Awal</label>
+          <input v-model.number="form.stok" type="number" min="0" class="w-full mt-1.5 bg-orange-50 p-4 rounded-2xl font-black text-orange-600 outline-none" required />
+        </div>
+
+        <div class="pt-6">
+          <button type="submit" :disabled="loading" class="w-full bg-slate-900 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl active:scale-95 disabled:bg-slate-300 transition-all">
+            {{ loading ? 'Menyimpan...' : 'Simpan Barang' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useInventoryStore } from '../stores/inventory'
+import { useRouter } from 'vue-router'
+
+const store = useInventoryStore()
+const router = useRouter()
+const loading = ref(false)
+
+const form = ref({
+  nama: '', 
+  kode: '', 
+  kategori: '', 
+  lokasi: '', 
+  hargaModal: 0, 
+  hargaJual: 0, 
+  stok: 0
+})
+
+// Fungsi generate kode unik agar tidak bertabrakan jika ada data dihapus
+const generateAutoCode = () => {
+  const prefix = 'MKH'
+  const timestamp = Date.now().toString().slice(-4) // Ambil 4 digit terakhir timestamp
+  const random = Math.floor(10 + Math.random() * 90) // 2 digit acak
+  form.value.kode = `${prefix}-${timestamp}${random}`
+}
+
+onMounted(async () => {
+  // Pastikan data terbaru ditarik
+  await store.fetchItems()
+  
+  // Ambil .name karena store.categories sekarang adalah Array of Objects
+  if (store.categories.length > 0) {
+    // Cari kategori "Lainnya" atau default ke index 0
+    const defaultCat = store.categories.find(c => c.name === 'Lainnya') || store.categories[0]
+    form.value.kategori = defaultCat.name
+  }
+  
+  generateAutoCode()
+})
+
+const handleSubmit = async () => {
+  if (!form.value.kategori) {
+    return alert('Harap pilih kategori produk!')
+  }
+
+  loading.value = true
+  try {
+    // Tambahkan data ke Firestore via Pinia Store
+    await store.addItem({
+      ...form.value,
+      createdAt: new Date().toISOString() // Tambahan info waktu
+    })
+    
+    alert('Barang berhasil disimpan!')
+    router.push('/produk')
+  } catch (e) { 
+    console.error(e)
+    alert('Gagal simpan barang. Pastikan koneksi internet stabil.') 
+  } finally { 
+    loading.value = false 
+  }
+}
+</script>
+
+4. Dashboard.vue:
+<template>
+  <div class="max-w-md mx-auto pb-20 px-2">
+    <div class="mb-8 px-1">
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">Ringkasan Gudang</h1>
+      <p class="text-slate-500 text-xs font-medium">Data diperbarui secara real-time</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <div class="bg-blue-600 p-5 rounded-[2.5rem] shadow-xl shadow-blue-200 text-white relative overflow-hidden group">
+        <div class="relative z-10">
+          <div class="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Total Jenis</div>
+          <div class="text-3xl font-black">{{ store.items.length }}</div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 absolute -right-2 -bottom-2 opacity-20 transform group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      </div>
+
+      <div class="bg-orange-500 p-5 rounded-[2.5rem] shadow-xl shadow-orange-200 text-white relative overflow-hidden group">
+        <div class="relative z-10">
+          <div class="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Total Unit</div>
+          <div class="text-3xl font-black">{{ totalStok }}</div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 absolute -right-2 -bottom-2 opacity-20 transform group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+
+      <div class="col-span-2 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estimasi Nilai Modal</div>
+          <div class="text-2xl font-black text-slate-800">Rp{{ totalModal.toLocaleString() }}</div>
+        </div>
+        <div class="bg-green-100 p-4 rounded-3xl text-green-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <div class="flex items-center justify-between mb-4 px-2">
+        <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+          <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          Stok Hampir Habis
+        </h2>
+        <span class="text-[10px] font-bold text-slate-400 italic">Limit: &lt; 5 unit</span>
+      </div>
+
+      <div v-if="lowStockItems.length > 0" class="space-y-3">
+        <div v-for="item in lowStockItems" :key="item.id" 
+          class="bg-white p-4 rounded-3xl border border-red-50 flex items-center justify-between shadow-sm">
+          <div class="flex flex-col">
+            <span class="text-[9px] font-bold text-red-500 uppercase tracking-tighter mb-1">{{ item.kategori }}</span>
+            <h3 class="font-bold text-slate-800 text-sm uppercase">{{ item.nama }}</h3>
+          </div>
+          <div class="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-sm">
+            {{ item.stok }}
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="bg-slate-50 border-2 border-dashed border-slate-100 p-10 rounded-[2.5rem] text-center">
+        <div class="text-3xl mb-2">🎉</div>
+        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Semua Stok Aman</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted } from 'vue'
+import { useInventoryStore } from '../stores/inventory'
+
+const store = useInventoryStore()
+
+onMounted(() => {
+  store.fetchItems()
+})
+
+// Logika menghitung total stok
+const totalStok = computed(() => {
+  return (store.items || []).reduce((sum, item) => sum + (Number(item.stok) || 0), 0)
+})
+
+// Logika menghitung total modal (Stok x Harga Modal)
+const totalModal = computed(() => {
+  return (store.items || []).reduce((sum, item) => sum + ((Number(item.stok) || 0) * (Number(item.hargaModal) || 0)), 0)
+})
+
+// Filter barang yang stoknya di bawah 5 unit
+const lowStockItems = computed(() => {
+  return (store.items || []).filter(item => (Number(item.stok) || 0) < 5)
+})
+</script>
+
+5. Kategori.vue:
+<template>
+  <div class="max-w-md mx-auto pb-20 px-4">
+    <div class="flex items-center gap-4 mb-8">
+      <router-link to="/" class="p-2 bg-white rounded-xl border border-slate-100 shadow-sm text-slate-600 active:scale-90 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </router-link>
+      <div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Kategori Produk</h1>
+        <p class="text-slate-500 text-xs font-medium">Kelola pengelompokan barang</p>
+      </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-50 mb-8">
+      <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+        Tambah Kategori
+      </h2>
+
+      <div class="flex gap-2 mb-6">
+        <input 
+          v-model="newCat" 
+          @keyup.enter="handleAdd"
+          type="text" 
+          placeholder="Nama kategori..." 
+          class="flex-1 bg-slate-50 border-none p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-sm transition-all outline-none"
+        />
+        <button 
+          @click="handleAdd"
+          class="bg-blue-600 text-white px-5 rounded-2xl font-black active:scale-90 transition-all shadow-lg shadow-blue-200"
+        >
+          +
+        </button>
+      </div>
+
+      <div class="space-y-2">
+        <div v-for="cat in store.categories" :key="cat.id" 
+          class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl group border border-transparent hover:border-slate-100 transition-all">
+          <span class="font-bold text-slate-700 uppercase text-xs tracking-wider">{{ cat.name }}</span>
+          
+          <button @click="handleDelete(cat)" class="text-slate-300 hover:text-red-500 transition-colors p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+
+        <div v-if="store.loading" class="text-center py-4 text-slate-400 text-xs animate-pulse">
+          Memuat kategori...
+        </div>
+      </div>
+    </div>
+
+    <div class="p-5 bg-orange-50 rounded-3xl border border-orange-100 text-orange-700">
+      <p class="text-[10px] font-bold leading-relaxed tracking-tight uppercase opacity-80 mb-1">Catatan</p>
+      <p class="text-xs font-medium italic leading-relaxed">
+        Menghapus kategori tidak akan menghapus barang yang sudah ada, namun kategori tersebut tidak akan muncul lagi di pilihan "Tambah Barang".
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useInventoryStore } from '../stores/inventory'
+
+const store = useInventoryStore()
+const newCat = ref('')
+
+onMounted(() => {
+  store.fetchItems() 
+})
+
+const handleAdd = async () => {
+  if (!newCat.value.trim()) return
+  try {
+    await store.addCategory(newCat.value.trim())
+    newCat.value = ''
+  } catch (e) {
+    alert("Gagal menambah kategori")
+  }
+}
+
+const handleDelete = async (cat) => {
+  if (confirm(`Hapus kategori "${cat.name}"?`)) {
+    try {
+      await store.removeCategory(cat.id)
+    } catch (e) {
+      alert("Gagal menghapus kategori")
+    }
+  }
+}
+</script>

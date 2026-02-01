@@ -94,7 +94,7 @@ const menuItems = [
   { name: 'Daftar Produk', path: '/produk', icon: 'svg-produk' },
   { name: 'Tambah Produk', path: '/tambah-produk', icon: 'svg-tambah' },
   { name: 'Kategori', path: '/kategori', icon: 'svg-kategori' },
-  { name: 'Tambah Staff', path: '/manage-users', icon: 'svg-users' },
+  { name: 'Manage Staff', path: '/manage-users', icon: 'svg-users' },
 ]
 </script>
 

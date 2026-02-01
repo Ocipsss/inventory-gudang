@@ -1,11 +1,6 @@
 <template>
   <div class="max-w-md mx-auto pb-10 px-2">
     <div class="flex items-center gap-4 mb-8">
-      <router-link to="/produk" class="p-2 bg-white rounded-xl border border-slate-100 shadow-sm text-slate-600 active:scale-90 transition-transform">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </router-link>
       <div>
         <h1 class="text-2xl font-black text-slate-800 tracking-tight">Tambah Barang</h1>
         <p class="text-slate-500 text-xs italic font-medium">Input stok baru ke gudang</p>

@@ -17,7 +17,8 @@ const routes = [
   { path: '/produk', name: 'ProductList', component: () => import('../views/ProductList.vue'), meta: { requiresAuth: true } },
   { path: '/tambah-produk', name: 'AddProduct', component: () => import('../views/AddProduct.vue'), meta: { requiresAuth: true, adminOnly: true } },
   { path: '/kategori', name: 'Kategori', component: () => import('../views/Kategori.vue'), meta: { requiresAuth: true, adminOnly: true } },
-  { path: '/manage-users', name: 'ManageUsers', component: () => import('../views/ManageUsers.vue'), meta: { requiresAuth: true, adminOnly: true } }
+  { path: '/manage-users', name: 'ManageUsers', component: () => import('../views/ManageUsers.vue'), meta: { requiresAuth: true, adminOnly: true } },
+  { path: '/add-user', name: 'AddUser', component: () => import('../views/AddUsers.vue'), meta: { requiresAuth: true, adminOnly: true } }
 ]
 
 const router = createRouter({

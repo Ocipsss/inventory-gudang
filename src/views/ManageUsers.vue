@@ -1,85 +1,63 @@
 <template>
-  <div class="max-w-md mx-auto pb-20 px-4">
-    <div class="flex items-center gap-4 mb-8">
-      <router-link to="/" class="p-2 bg-white rounded-xl border border-slate-100 shadow-sm text-slate-600 active:scale-90 transition-transform">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  <div class="max-w-md mx-auto pb-20 px-2">
+    <div class="flex justify-between items-end mb-8 px-1">
+      <div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Daftar Staff</h1>
+        <p class="text-slate-500 text-xs font-medium">Total: {{ users.length }} akun terdaftar</p>
+      </div>
+      <router-link to="/add-user" class="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-200 active:scale-90 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
       </router-link>
-      <div>
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Manajemen Staff</h1>
-        <p class="text-slate-500 text-xs font-medium">Daftarkan akses untuk tim Anda</p>
-      </div>
     </div>
 
-    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-50">
-      <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2">
-        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-        Tambah Staff Baru
-      </h2>
-
-      <form @submit.prevent="handleRegisterStaff" class="space-y-4">
-        <div>
-          <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Email Akses</label>
-          <input v-model="form.email" type="email" placeholder="contoh@gmail.com" class="w-full mt-1.5 bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-blue-500 transition-all" required />
+    <div class="space-y-3">
+      <div v-for="user in users" :key="user.id" class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 uppercase">
+          {{ user.nama?.charAt(0) }}
         </div>
-
-        <div>
-          <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Password</label>
-          <input v-model="form.password" type="password" placeholder="Minimal 6 karakter" class="w-full mt-1.5 bg-slate-50 p-4 rounded-2xl font-bold text-sm outline-none border-2 border-transparent focus:border-blue-500 transition-all" required />
+        <div class="flex-1">
+          <h3 class="font-bold text-slate-800 uppercase text-sm">{{ user.nama }}</h3>
+          <p class="text-[10px] text-slate-400 font-medium">{{ user.email }}</p>
         </div>
-
-        <div class="pt-4">
-          <button type="submit" :disabled="loading" class="w-full bg-slate-900 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest shadow-xl active:scale-95 disabled:bg-slate-300 transition-all">
-            {{ loading ? 'Mendaftarkan...' : 'Daftarkan Staff' }}
+        <div class="flex flex-col items-end gap-1">
+          <span :class="user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'" 
+                class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+            {{ user.role }}
+          </span>
+          <button v-if="user.role !== 'admin'" @click="deleteUser(user)" class="text-red-300 hover:text-red-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
           </button>
         </div>
-      </form>
-    </div>
-
-    <div class="mt-8 p-5 bg-blue-50 rounded-3xl border border-blue-100 text-blue-700">
-      <p class="text-[10px] font-bold uppercase mb-1">Penting</p>
-      <p class="text-xs font-medium italic leading-relaxed">
-        Setelah mendaftarkan staff baru, Anda akan otomatis ter-logout. Ini adalah prosedur keamanan standar Firebase untuk memverifikasi akun baru.
-      </p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { auth, db } from '../firebase/firebase'
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { db } from '../firebase/firebase'
+import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore'
 
-const router = useRouter()
-const loading = ref(false)
-const form = ref({ email: '', password: '' })
+const users = ref([])
 
-const handleRegisterStaff = async () => {
-  if (form.value.password.length < 6) return alert('Password minimal 6 karakter')
-  
-  loading.value = true
-  try {
-    // 1. Buat User di Auth
-    const res = await createUserWithEmailAndPassword(auth, form.value.email, form.value.password)
-    
-    // 2. Simpan role 'staff' ke Firestore
-    await setDoc(doc(db, 'users', res.user.uid), {
-      email: form.value.email,
-      nama: form.value.email.split('@')[0],
-      role: 'staff',
-      createdAt: new Date().toISOString()
-    })
-    
-    alert('Staff berhasil terdaftar! Anda akan diarahkan ke halaman login.')
-    await signOut(auth)
-    router.push('/login')
-  } catch (e) {
-    alert('Gagal: ' + e.message)
-  } finally {
-    loading.value = false
+onMounted(() => {
+  onSnapshot(collection(db, 'users'), (snapshot) => {
+    users.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+  })
+})
+
+const deleteUser = async (user) => {
+  if (confirm(`Hapus akses untuk ${user.nama}?`)) {
+    try {
+      await deleteDoc(doc(db, 'users', user.id))
+      alert('Data profil di Firestore dihapus. Catatan: User tetap ada di Auth (perlu dihapus manual via console).')
+    } catch (e) {
+      alert('Gagal menghapus user.')
+    }
   }
 }
 </script>
