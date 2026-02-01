@@ -1,6 +1,12 @@
 <template>
   <div class="flex min-h-screen bg-slate-50 text-slate-900 font-sans overflow-x-hidden">
     
+    <transition name="slide-down">
+      <div v-if="!isOnline" class="fixed top-0 left-0 w-full bg-orange-500 text-white text-[10px] font-black uppercase tracking-[0.2em] py-2 text-center z-[200] shadow-lg">
+        ⚠️ Mode Offline: Data disimpan secara lokal & sinkron otomatis saat online
+      </div>
+    </transition>
+
     <template v-if="$route.name !== 'Login'">
       <transition name="fade">
         <div v-if="isNavOpen" 
@@ -33,9 +39,15 @@
               v-for="item in filteredMenu" :key="item.path" :to="item.path" 
               @click="isNavOpen = false"
               class="flex items-center gap-4 p-4 rounded-2xl font-bold transition-all duration-300 group"
-              :class="$route.path === item.path ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'"
+              :class="$route.path === item.path ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'"
             >
-              <component :is="item.icon" class="h-6 w-6" />
+              <div class="shrink-0">
+                <svg v-if="item.name === 'Dashboard'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                <svg v-else-if="item.name === 'Daftar Produk'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                <svg v-else-if="item.name === 'Tambah Produk'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg v-else-if="item.name === 'Kategori'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 11h.01M7 15h.01M13 7h.01M13 11h.01M13 15h.01M17 7h.01M17 11h.01M17 15h.01" /></svg>
+                <svg v-else-if="item.name === 'Manage Staff'" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              </div>
               <span>{{ item.name }}</span>
             </router-link>
             
@@ -48,7 +60,7 @@
           </nav>
 
           <div class="pt-6 border-t border-slate-50 text-center">
-            <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Version 1.0.2</p>
+            <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Version 1.0.2 • Offline Ready</p>
           </div>
         </div>
       </aside>
@@ -56,8 +68,11 @@
 
     <div class="flex-1 flex flex-col min-w-0 min-h-screen">
       <header v-if="$route.name !== 'Login'" 
-        class="fixed top-0 z-50 bg-slate-50/80 backdrop-blur-xl px-5 py-4 flex items-center justify-between border-b border-slate-200/50"
-        :class="$route.name !== 'Login' ? 'w-full lg:w-[calc(100%-18rem)]' : 'w-full'">
+        class="fixed top-0 z-50 bg-slate-50/80 backdrop-blur-xl px-5 py-4 flex items-center justify-between border-b border-slate-200/50 transition-all duration-300"
+        :class="[
+          $route.name !== 'Login' ? 'w-full lg:w-[calc(100%-18rem)]' : 'w-full',
+          !isOnline ? 'mt-8' : 'mt-0'
+        ]">
         
         <div class="flex items-center gap-4">
           <button @click="isNavOpen = true" class="lg:hidden p-3 bg-white shadow-md rounded-2xl text-slate-800 active:scale-90 transition-all border border-slate-100">
@@ -69,8 +84,10 @@
         </div>
         
         <div class="flex items-center gap-3">
-          <span class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">Sistem Aktif</span>
-          <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-200"></div>
+          <span class="hidden md:block text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            {{ isOnline ? 'Sistem Aktif' : 'Mode Offline' }}
+          </span>
+          <div :class="isOnline ? 'bg-green-500 shadow-green-200 animate-pulse' : 'bg-orange-500 shadow-orange-200'" class="w-3 h-3 rounded-full shadow-lg"></div>
         </div>
       </header>
 
@@ -82,13 +99,29 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { auth } from './firebase/firebase'
 import { signOut } from 'firebase/auth'
 import { useRouter } from 'vue-router'
 
 const isNavOpen = ref(false)
+const isOnline = ref(window.navigator.onLine)
 const router = useRouter()
+
+// Fungsi update status koneksi
+const updateOnlineStatus = () => {
+  isOnline.value = window.navigator.onLine
+}
+
+onMounted(() => {
+  window.addEventListener('online', updateOnlineStatus)
+  window.addEventListener('offline', updateOnlineStatus)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('online', updateOnlineStatus)
+  window.removeEventListener('offline', updateOnlineStatus)
+})
 
 const handleLogout = async () => {
   if (confirm('Apakah Anda ingin keluar?')) {
@@ -99,11 +132,11 @@ const handleLogout = async () => {
 }
 
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: 'svg-dashboard', adminOnly: false },
-  { name: 'Daftar Produk', path: '/produk', icon: 'svg-produk', adminOnly: false },
-  { name: 'Tambah Produk', path: '/tambah-produk', icon: 'svg-tambah', adminOnly: true },
-  { name: 'Kategori', path: '/kategori', icon: 'svg-kategori', adminOnly: true },
-  { name: 'Manage Staff', path: '/manage-users', icon: 'svg-users', adminOnly: true },
+  { name: 'Dashboard', path: '/', adminOnly: false },
+  { name: 'Daftar Produk', path: '/produk', adminOnly: false },
+  { name: 'Tambah Produk', path: '/tambah-produk', adminOnly: true },
+  { name: 'Kategori', path: '/kategori', adminOnly: true },
+  { name: 'Manage Staff', path: '/manage-users', adminOnly: true },
 ]
 
 const filteredMenu = computed(() => {
@@ -119,7 +152,9 @@ const filteredMenu = computed(() => {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-/* Hide scrollbar but keep functionality */
+.slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }
+.slide-down-enter-from, .slide-down-leave-to { transform: translateY(-100%); }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
