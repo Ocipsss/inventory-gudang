@@ -1,13 +1,11 @@
 <template>
   <div class="max-w-4xl mx-auto pb-20 px-4">
-    
     <div class="mb-10 lg:mb-12">
       <h1 class="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight">Tambah Barang</h1>
       <p class="text-slate-500 text-sm font-medium mt-1">Input stok baru ke database gudang pusat</p>
     </div>
 
     <form @submit.prevent="handleSubmit" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      
       <div class="lg:col-span-7 space-y-6">
         <div class="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/40 border border-slate-50">
           <h2 class="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-6">Informasi Produk</h2>
@@ -16,6 +14,11 @@
             <div>
               <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Nama Barang</label>
               <input v-model="form.nama" type="text" placeholder="Masukkan nama produk..." class="w-full mt-1.5 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white p-4 rounded-2xl outline-none transition-all font-semibold" required />
+            </div>
+
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Penerbit / Brand</label>
+              <input v-model="form.penerbit" type="text" placeholder="Gema Insani, Al-Qosbah, atau Brand..." class="w-full mt-1.5 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white p-4 rounded-2xl outline-none transition-all font-semibold" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -74,7 +77,6 @@
           </div>
         </div>
       </div>
-
     </form>
   </div>
 </template>
@@ -90,6 +92,7 @@ const loading = ref(false)
 
 const form = ref({
   nama: '', 
+  penerbit: '',
   kode: '', 
   kategori: '', 
   lokasi: '', 

@@ -43,7 +43,6 @@ export const useInventoryStore = defineStore('inventory', {
       this.isInitialized = true
     },
 
-    // PROTEKSI: Cek role sebelum eksekusi ke Firebase
     async addCategory(catName) {
       if (localStorage.getItem('userRole') !== 'admin') return
       await addDoc(collection(db, 'categories'), { name: catName })
@@ -56,7 +55,9 @@ export const useInventoryStore = defineStore('inventory', {
 
     async addItem(item) {
       if (localStorage.getItem('userRole') !== 'admin') return
-      await addDoc(collection(db, 'products'), item)
+      // Menambah nilai default '-' jika penerbit tidak diisi
+      const dataToSave = { ...item, penerbit: item.penerbit || '-' }
+      await addDoc(collection(db, 'products'), dataToSave)
     },
 
     async updateItem(id, updatedData) {

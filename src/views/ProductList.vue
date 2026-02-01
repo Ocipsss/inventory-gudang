@@ -21,7 +21,6 @@
     </div>
 
     <div class="flex flex-col lg:flex-row gap-8">
-      
       <div class="lg:w-64 shrink-0 overflow-x-auto no-scrollbar py-1">
         <div class="flex lg:flex-col gap-2">
           <h2 class="hidden lg:block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 ml-2">Filter Kategori</h2>
@@ -51,9 +50,11 @@
             </div>
 
             <div class="flex justify-between items-start">
-              <div class="flex-1 min-w-0">
-                <h3 class="font-black text-slate-800 uppercase text-sm lg:text-base leading-tight group-hover:text-blue-600 transition-colors truncate pr-2">{{ item.nama }}</h3>
-                <div class="flex items-center gap-2 mt-2">
+              <div class="flex-1 min-w-0 pr-2">
+                <h3 class="font-black text-slate-800 uppercase text-sm lg:text-base leading-tight group-hover:text-blue-600 transition-colors truncate">{{ item.nama }}</h3>
+                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-tighter mt-0.5">{{ item.penerbit || '-' }}</p>
+                
+                <div class="flex items-center gap-2 mt-3">
                   <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Lokasi:</span>
                   <span class="text-[10px] font-bold text-slate-600">{{ item.lokasi || 'Tidak ada rak' }}</span>
                 </div>
@@ -115,6 +116,11 @@
             <input v-model="editForm.nama" :disabled="userRole !== 'admin'" type="text" class="w-full mt-1.5 bg-slate-50 p-4 rounded-2xl font-bold text-sm border-2 border-transparent focus:border-blue-500 outline-none disabled:opacity-70 disabled:cursor-not-allowed" />
           </div>
 
+          <div class="md:col-span-2">
+            <label class="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-widest">Penerbit</label>
+            <input v-model="editForm.penerbit" :disabled="userRole !== 'admin'" type="text" class="w-full mt-1.5 bg-slate-50 p-4 rounded-2xl font-bold text-sm border-2 border-transparent focus:border-blue-500 outline-none disabled:opacity-70 disabled:cursor-not-allowed" />
+          </div>
+
           <div>
             <label class="text-[10px] font-black text-blue-400 uppercase ml-1 tracking-widest">Harga Modal</label>
             <input v-model.number="editForm.hargaModal" :disabled="userRole !== 'admin'" type="number" class="w-full mt-1.5 bg-blue-50/50 p-4 rounded-2xl font-bold text-sm text-blue-600 outline-none disabled:opacity-70" />
@@ -157,12 +163,18 @@ const searchQuery = ref('')
 const selectedCategory = ref('Semua')
 const isModalOpen = ref(false)
 const currentId = ref(null)
-const editForm = ref({ nama: '', stok: 0, hargaModal: 0, hargaJual: 0, lokasi: '', kategori: '', kode: '' })
+const editForm = ref({ nama: '', penerbit: '', stok: 0, hargaModal: 0, hargaJual: 0, lokasi: '', kategori: '', kode: '' })
 
 const filteredItems = computed(() => {
   let items = store.items || []
   if (selectedCategory.value !== 'Semua') items = items.filter(i => i.kategori === selectedCategory.value)
-  if (searchQuery.value) items = items.filter(i => i.nama?.toLowerCase().includes(searchQuery.value.toLowerCase()))
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    items = items.filter(i => 
+      i.nama?.toLowerCase().includes(q) || 
+      i.penerbit?.toLowerCase().includes(q)
+    )
+  }
   return items
 })
 
